@@ -24,7 +24,7 @@ _SITK_INTERPOLATOR_DICT = {
 
 
 def resample_sitk_image(
-    sitk_image: sitk.Image, new_size, interpolator="gaussian"
+    sitk_image: sitk.Image, new_size, interpolator="gaussian", fill_value=0
 ) -> sitk.Image:
     """
         modified version from:
@@ -75,6 +75,7 @@ def resample_sitk_image(
     resample_filter.SetTransform(sitk.Transform())
     resample_filter.SetDefaultPixelValue(orig_pixelid)
     resample_filter.SetInterpolator(sitk_interpolator)
+    resample_filter.SetDefaultPixelValue(fill_value)
     # run it
     resampled_sitk_image = resample_filter.Execute(sitk_image)
 
@@ -82,13 +83,14 @@ def resample_sitk_image(
 
 
 def resample_image_to_voxel_size(
-    image: sitk.Image, new_spacing, interpolator
+    image: sitk.Image, new_spacing, interpolator, fill_value=0
 ) -> sitk.Image:
     """
         resample a 3d image to a given voxel size (dx, dy, dz)
     :param image: 3D sitk image
     :param new_spacing: voxel size (dx, dy, dz)
     :param interpolator:
+    :param fill_value: pixel value when a transformed pixel is outside of the image.
     :return:
     """
 
@@ -104,7 +106,8 @@ def resample_image_to_voxel_size(
     #  SimpleITK expects lists, not ndarrays
     new_size = [int(s) for s in new_size]
 
-    return resample_sitk_image(image, new_size, interpolator)
+    return resample_sitk_image(image, new_size, interpolator, fill_value)
+
 
 
 def main(REGEX_TO_IMAGES, WRITE_TO):
@@ -112,7 +115,8 @@ def main(REGEX_TO_IMAGES, WRITE_TO):
         tqdm.write('Resampling {}'.format(image))
         resampled_image = resample_image_to_voxel_size(
             image, spacing=[1, 1, 1],
-            interpolator='linear'
+            interpolator='linear', 
+            fill_value=-1200
         )
         base_name = 'resampled_' + os.path.basename(image)
         write_to = os.path.join(WRITE_TO, base_name)
